@@ -1,0 +1,12 @@
+{
+  "expo": {
+    "name": "breath-wise",
+    "slug": "breath-wise",
+    "version": "1.0.0",
+    "extra": {
+      "eas": {
+        "projectId": "1629be7a-fad3-4547-9114-56dbb6d4ee12"
+      }
+    }
+  }
+}
