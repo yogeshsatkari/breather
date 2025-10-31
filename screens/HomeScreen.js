@@ -6,49 +6,78 @@ import BottomSheetReminder from "../components/BottomSheetReminder";
 
 export default function HomeScreen({ navigation }) {
   const [showReminderSheet, setShowReminderSheet] = useState(false);
+  const [sessionActive, setSessionActive] = useState(false);
+
+  const handleStopSession = () => {
+    setSessionActive(false); // triggers reset inside TimerCircle via prop
+  };
 
   return (
     <View style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <View>
-          <Text style={styles.appTitle}>Break Free</Text>
-          {/* <Text style={styles.appSubtitle}>It’s time to break free</Text> */}
-        </View>
+      {/* Hide header & hero during active session */}
+      {!sessionActive && (
+        <>
+          {/* Header */}
+          <View style={styles.header}>
+            <Text style={styles.appTitle}>Break Free</Text>
+            <TouchableOpacity
+              onPress={() => navigation.navigate("Settings")}
+              style={styles.iconButton}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="settings-outline" size={24} color="#4B5563" />
+            </TouchableOpacity>
+          </View>
 
-        {/* Settings */}
-        <TouchableOpacity
-          onPress={() => navigation.navigate("Settings")}
-          style={styles.iconButton}
-          activeOpacity={0.7}
-        >
-          <Ionicons name="settings-outline" size={24} color="#4B5563" />
-        </TouchableOpacity>
-      </View>
+          {/* Hero */}
+          <View style={styles.hero}>
+            <Text style={styles.heroTitle}>Ready for your 2-minute break?</Text>
+            <Text style={styles.heroSubtitle}>
+              Take a deep breath and find your center.
+            </Text>
+          </View>
+        </>
+      )}
 
-      {/* Hero */}
-      <View style={styles.hero}>
-        <Text style={styles.heroTitle}>Ready for your 2-minute break?</Text>
-        <Text style={styles.heroSubtitle}>
-          Take a deep breath and find your center.
-        </Text>
-      </View>
-
-      {/* Timer */}
-      <View style={styles.timerContainer}>
-        <TimerCircle duration={120} />
-      </View>
-
-      {/* Reminder */}
-      <TouchableOpacity
-        style={styles.reminderButton}
-        activeOpacity={0.8}
-        onPress={() => setShowReminderSheet(true)}
+      {/* Timer Section */}
+      <View
+        style={[
+          styles.timerContainer,
+          sessionActive && { flex: 1, marginTop: 0 },
+        ]}
       >
-        <Text style={styles.reminderText}>🌤️ Remind me to take a break</Text>
-      </TouchableOpacity>
+        <TimerCircle
+          duration={120}
+          onStart={() => setSessionActive(true)}
+          onComplete={() => setSessionActive(false)}
+          onStop={() => setSessionActive(false)}
+          isSessionActive={sessionActive}
+        />
+      </View>
 
-      {/* Bottom Sheet */}
+      {/* ❌ Stop Icon — visible during all active meditation stages */}
+      {sessionActive && (
+        <TouchableOpacity
+          style={styles.closeButton}
+          activeOpacity={0.8}
+          onPress={handleStopSession}
+        >
+          <Ionicons name="close" size={24} color="#4B5563" />
+        </TouchableOpacity>
+      )}
+
+      {/* Reminder Button */}
+      {!sessionActive && (
+        <TouchableOpacity
+          style={styles.reminderButton}
+          activeOpacity={0.8}
+          onPress={() => setShowReminderSheet(true)}
+        >
+          <Text style={styles.reminderText}>🌤️ Remind me to take a break</Text>
+        </TouchableOpacity>
+      )}
+
+      {/* Reminder Bottom Sheet */}
       {showReminderSheet && (
         <BottomSheetReminder onClose={() => setShowReminderSheet(false)} />
       )}
@@ -68,20 +97,15 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
   },
-  iconButton: {
-    padding: 6,
-    borderRadius: 8,
-  },
   appTitle: {
     fontSize: 22,
     fontWeight: "700",
     color: "#1F2937",
   },
-  // appSubtitle: {
-  //   fontSize: 13,
-  //   color: "#6B7280",
-  //   marginTop: 2,
-  // },
+  iconButton: {
+    padding: 6,
+    borderRadius: 8,
+  },
   hero: {
     marginTop: 80,
     alignItems: "center",
@@ -121,5 +145,12 @@ const styles = StyleSheet.create({
     color: "#111827",
     fontWeight: "500",
     fontSize: 15,
+  },
+  closeButton: {
+    position: "absolute",
+    top: 60, // same as container paddingTop for alignment
+    right: 24, // same as header horizontal padding
+    padding: 6,
+    borderRadius: 8,
   },
 });

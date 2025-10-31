@@ -27,38 +27,38 @@ export default function SettingsScreen({ navigation }) {
             <Ionicons name="chevron-back" size={24} color="#374151" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Settings</Text>
-          {/* Placeholder for balance */}
           <View style={{ width: 24 }} />
         </View>
 
         {/* Options */}
         <View style={styles.content}>
-          <TouchableOpacity
-            style={styles.option}
-            onPress={() => openLink("https://yourdomain.com/tos")}
-            activeOpacity={0.7}
-          >
-            <Text style={styles.optionText}>Terms of Service</Text>
-          </TouchableOpacity>
+          {[
+            { label: "Terms of Service", link: "https://yourdomain.com/tos" },
+            { label: "Privacy Policy", link: "https://yourdomain.com/privacy" },
+          ].map((item, i) => (
+            <TouchableOpacity
+              key={i}
+              style={styles.option}
+              onPress={() => openLink(item.link)}
+              activeOpacity={0.6}
+            >
+              <Text style={styles.optionText}>{item.label}</Text>
+            </TouchableOpacity>
+          ))}
 
           <TouchableOpacity
-            style={styles.option}
-            onPress={() => openLink("https://yourdomain.com/privacy")}
-            activeOpacity={0.7}
-          >
-            <Text style={styles.optionText}>Privacy Policy</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.option}
+            style={[styles.option, { borderBottomWidth: 0 }]}
             onPress={() => alert("Account deletion coming soon")}
-            activeOpacity={0.7}
+            activeOpacity={0.6}
           >
             <Text style={[styles.optionText, styles.deleteText]}>
               Delete Account
             </Text>
           </TouchableOpacity>
         </View>
+
+        {/* App Version */}
+        <Text style={styles.versionText}>v1.0.0</Text>
       </View>
     </SafeAreaView>
   );
@@ -78,7 +78,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: 40,
+    marginBottom: 32,
   },
   backButton: {
     padding: 6,
@@ -87,30 +87,32 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 22,
     fontWeight: "700",
-    color: "#1F2937",
-    textAlign: "center",
+    color: "#111827",
   },
   content: {
-    marginTop: 20,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 14,
+    overflow: "hidden",
   },
   option: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 12,
-    paddingVertical: 14,
+    paddingVertical: 16,
     paddingHorizontal: 18,
-    marginBottom: 16,
-    shadowColor: "#000",
-    shadowOpacity: 0.05,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 4,
-    elevation: 2,
+    borderBottomWidth: 1,
+    borderColor: "#E5E7EB",
   },
   optionText: {
     fontSize: 16,
-    color: "#111827",
+    color: "#1F2937",
     fontWeight: "500",
   },
   deleteText: {
     color: "#DC2626",
+  },
+  versionText: {
+    marginTop: "auto",
+    textAlign: "center",
+    color: "#9CA3AF",
+    fontSize: 13,
+    marginBottom: 12,
   },
 });

@@ -83,7 +83,6 @@ export default function BottomSheetReminder({ onClose }) {
   };
 
   const openTimePicker = (index) => {
-    // Parse current time for pre-selection
     const [time, ampm] = selectedTimes[index].time.split(" ");
     const [hourStr, minuteStr] = time.split(":");
     let hours = parseInt(hourStr, 10);
@@ -113,19 +112,20 @@ export default function BottomSheetReminder({ onClose }) {
               style={[styles.sheet, { transform: [{ translateY: slideAnim }] }]}
             >
               <View style={styles.header}>
-                <Text style={styles.title}>Daily Timer</Text>
+                <View style={styles.handle} />
+                <Text style={styles.title}>Set Daily Reminders</Text>
               </View>
 
               {selectedTimes.map((slot, i) => (
-                <View key={i} style={styles.row}>
+                <TouchableOpacity
+                  key={i}
+                  style={styles.row}
+                  activeOpacity={0.7}
+                  onPress={() => openTimePicker(i)}
+                >
                   <Text style={styles.label}>{slot.label}</Text>
-                  <TouchableOpacity
-                    onPress={() => openTimePicker(i)}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={styles.time}>{slot.time}</Text>
-                  </TouchableOpacity>
-                </View>
+                  <Text style={styles.time}>{slot.time}</Text>
+                </TouchableOpacity>
               ))}
 
               <TouchableOpacity
@@ -133,7 +133,7 @@ export default function BottomSheetReminder({ onClose }) {
                 activeOpacity={0.8}
                 onPress={handleSaveReminders}
               >
-                <Text style={styles.doneText}>Save Reminders</Text>
+                <Text style={styles.doneText}>Save</Text>
               </TouchableOpacity>
 
               {showPicker && (
@@ -156,60 +156,63 @@ export default function BottomSheetReminder({ onClose }) {
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.35)",
+    backgroundColor: "rgba(0,0,0,0.4)",
     justifyContent: "flex-end",
   },
   sheet: {
     backgroundColor: "#fff",
-    paddingHorizontal: 24,
-    paddingVertical: 22,
+    paddingHorizontal: 20,
+    paddingTop: 10,
+    paddingBottom: 24,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
-    minHeight: 360,
-    shadowColor: "#000",
-    shadowOpacity: 0.1,
-    shadowOffset: { width: 0, height: -2 },
-    shadowRadius: 6,
-    elevation: 8,
+    minHeight: 340,
+  },
+  handle: {
+    width: 40,
+    height: 4,
+    backgroundColor: "#E5E7EB",
+    borderRadius: 2,
+    alignSelf: "center",
+    marginBottom: 10,
   },
   header: {
     alignItems: "center",
-    marginBottom: 12,
+    marginBottom: 14,
   },
   title: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: "#1F2937",
+    fontSize: 17,
+    fontWeight: "600",
+    color: "#111827",
   },
   row: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginVertical: 10,
-    paddingVertical: 6,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    borderRadius: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    marginBottom: 10,
   },
   label: {
-    fontSize: 16,
+    fontSize: 15,
     color: "#374151",
   },
   time: {
-    fontSize: 16,
-    color: "#4B9CD3",
+    fontSize: 15,
+    color: "#2563EB",
     fontWeight: "600",
   },
   doneBtn: {
-    backgroundColor: "#4B9CD3",
+    backgroundColor: "#2563EB",
     paddingVertical: 14,
     borderRadius: 12,
-    marginTop: 24,
-    shadowColor: "#000",
-    shadowOpacity: 0.08,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 4,
-    elevation: 3,
+    marginTop: 18,
   },
   doneText: {
-    color: "#FFFFFF",
+    color: "#fff",
     textAlign: "center",
     fontWeight: "600",
     fontSize: 16,
