@@ -61,30 +61,27 @@ const parseTimeForDailyTrigger = (timeString) => {
 // Schedule a single notification
 const scheduleNotification = async (reminder, index) => {
   const { hour, minute } = parseTimeForDailyTrigger(reminder.time);
-  
-  console.log(`Scheduling ${reminder.label} for ${reminder.time} (${hour}:${minute})`);
-
   const identifier = await Notifications.scheduleNotificationAsync({
     content: {
       title: "Break Free",
       body: `Time for your 2 minutes ${reminder.label.toLowerCase()} breathing!`,
       sound: "default",
     },
-    trigger: Platform.OS === 'android' 
-      ? {
-          type: Notifications.SchedulableTriggerInputTypes.DAILY,
-          hour,
-          minute,
-          channelId: 'default'
-        }
-      : {
-          type: Notifications.SchedulableTriggerInputTypes.DAILY,
-          hour,
-          minute
-        },
+    trigger:
+      Platform.OS === "android"
+        ? {
+            type: Notifications.SchedulableTriggerInputTypes.DAILY,
+            hour,
+            minute,
+            channelId: "default",
+          }
+        : {
+            type: Notifications.SchedulableTriggerInputTypes.DAILY,
+            hour,
+            minute,
+          },
   });
 
-  console.log(`Scheduled daily notification with ID: ${identifier}`);
   return { id: identifier, index, label: reminder.label };
 };
 
