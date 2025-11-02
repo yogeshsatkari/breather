@@ -10,6 +10,7 @@ import {
   Easing,
   Platform,
   BackHandler,
+  Switch,  // Added Switch import
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import DateTimePicker from "@react-native-community/datetimepicker";
@@ -20,10 +21,10 @@ const REMINDERS_STORAGE_KEY = "@breathwise_reminders";
 
 export default function BottomSheetReminder({ onClose }) {
   const [selectedTimes, setSelectedTimes] = useState([
-    { label: "Morning", time: "07:00 AM" },
-    { label: "Noon", time: "12:00 PM" },
-    { label: "Evening", time: "06:00 PM" },
-    { label: "Night", time: "10:00 PM" },
+    { label: "Morning", time: "07:00 AM", enabled: true },
+    { label: "Noon", time: "12:00 PM", enabled: true },
+    { label: "Evening", time: "06:00 PM", enabled: true },
+    { label: "Night", time: "10:00 PM", enabled: true },
   ]);
 
   const [showPicker, setShowPicker] = useState(false);
@@ -76,7 +77,13 @@ export default function BottomSheetReminder({ onClose }) {
     try {
       const savedReminders = await AsyncStorage.getItem(REMINDERS_STORAGE_KEY);
       if (savedReminders) {
-        setSelectedTimes(JSON.parse(savedReminders));
+        const parsed = JSON.parse(savedReminders);
+        // Ensure all reminders have enabled property (for backward compatibility)
+        const updated = parsed.map(reminder => ({
+          ...reminder,
+          enabled: reminder.enabled !== undefined ? reminder.enabled : true
+        }));
+        setSelectedTimes(updated);
       }
     } catch (error) {
       console.error("Error loading saved reminders:", error);
@@ -134,6 +141,12 @@ export default function BottomSheetReminder({ onClose }) {
     setShowPicker(false);
   };
 
+  const toggleReminder = (index) => {
+    const updated = [...selectedTimes];
+    updated[index].enabled = !updated[index].enabled;
+    setSelectedTimes(updated);
+  };
+
   const openTimePicker = (index) => {
     const [time, ampm] = selectedTimes[index].time.split(" ");
     const [hourStr, minuteStr] = time.split(":");
@@ -181,19 +194,32 @@ export default function BottomSheetReminder({ onClose }) {
                 </View>
 
                 {selectedTimes.map((slot, i) => (
-                  <TouchableOpacity
-                    key={i}
-                    style={styles.row}
-                    activeOpacity={0.7}
-                    onPress={() => openTimePicker(i)}
-                  >
-                    <Text style={styles.label}>{slot.label}</Text>
-                    <Text style={styles.time}>{slot.time}</Text>
-                  </TouchableOpacity>
+                  <View key={i} style={styles.row}>
+                    <TouchableOpacity
+                      style={styles.timeSection}
+                      activeOpacity={0.7}
+                      onPress={() => openTimePicker(i)}
+                    >
+                      <Text style={[styles.label, !slot.enabled && styles.disabledText]}>
+                        {slot.label}
+                      </Text>
+                      <Text style={[styles.time, !slot.enabled && styles.disabledText]}>
+                        {slot.time}
+                      </Text>
+                    </TouchableOpacity>
+                    
+                    <Switch
+                      value={slot.enabled}
+                      onValueChange={() => toggleReminder(i)}
+                      trackColor={{ false: "#767577", true: "#2563EB" }}
+                      thumbColor={slot.enabled ? "#ffffff" : "#f4f3f4"}
+                      style={styles.switch}
+                    />
+                  </View>
                 ))}
 
                 <TouchableOpacity
-                  key={`save-btn-${selectedTimes.map(t => t.time).join('-')}`}
+                  key={`save-btn-${selectedTimes.map(t => `${t.time}-${t.enabled}`).join('-')}`}
                   style={styles.doneBtn}
                   activeOpacity={0.8}
                   onPress={handleSaveReminders}
@@ -259,7 +285,6 @@ const styles = StyleSheet.create({
   },
   row: {
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
     borderWidth: 1,
     borderColor: "#E5E7EB",
@@ -267,6 +292,13 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     paddingHorizontal: 16,
     marginBottom: 10,
+    backgroundColor: "#ffffff",
+  },
+  timeSection: {
+    flex: 1,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
   },
   label: {
     fontSize: 15,
@@ -276,6 +308,13 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: "#2563EB",
     fontWeight: "600",
+  },
+  switch: {
+    marginLeft: 12,
+  },
+  disabledText: {
+    color: "#9CA3AF",
+    textDecorationLine: "line-through",
   },
   doneBtn: {
     backgroundColor: "#2563EB",

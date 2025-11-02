@@ -98,6 +98,7 @@ export const cancelAllNotifications = async () => {
 };
 
 // Schedule notifications for all reminders
+// Schedule notifications for all reminders
 export const scheduleAllReminders = async () => {
   try {
     // Cancel existing notifications first
@@ -110,12 +111,21 @@ export const scheduleAllReminders = async () => {
       return;
     }
 
-    const reminders = JSON.parse(savedReminders);
+    const allReminders = JSON.parse(savedReminders);
+    
+    // Filter to only enabled reminders
+    const enabledReminders = allReminders.filter(reminder => reminder.enabled !== false);
+    
+    if (enabledReminders.length === 0) {
+      console.log("No enabled reminders to schedule");
+      return;
+    }
+
     const notificationIds = [];
 
-    // Schedule each reminder
-    for (let i = 0; i < reminders.length; i++) {
-      const notificationInfo = await scheduleNotification(reminders[i], i);
+    // Schedule each enabled reminder
+    for (let i = 0; i < enabledReminders.length; i++) {
+      const notificationInfo = await scheduleNotification(enabledReminders[i], i);
       notificationIds.push(notificationInfo);
     }
 
@@ -126,7 +136,7 @@ export const scheduleAllReminders = async () => {
     );
 
     console.log(
-      `Scheduled ${notificationIds.length} notifications:`,
+      `Scheduled ${notificationIds.length} enabled notifications:`,
       notificationIds
     );
     return notificationIds;
