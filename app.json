@@ -4,6 +4,12 @@
     "slug": "break-free",
     "version": "1.0.0",
     "icon": "./assets/icon.png",
+    "splash": {
+      "image": "./assets/splash-image.png",
+      "backgroundColor": "#F9FAFB",
+      "resizeMode": "contain"
+    },
+    "backgroundColor": "#F9FAFB",
     "plugins": [
       ["expo-av"],
       [
@@ -22,7 +28,8 @@
       "adaptiveIcon": {
         "foregroundImage": "./assets/icon.png",
         "backgroundColor": "#E0F2FE"
-      }
+      },
+    "package": "com.yogeshsatkari.breakfree"
     },
     "extra": {
       "eas": {
