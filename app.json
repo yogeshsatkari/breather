@@ -1,13 +1,30 @@
 {
   "expo": {
-    "name": "breath-wise",
-    "slug": "breath-wise",
+    "name": "Break Free",
+    "slug": "break-free",
     "version": "1.0.0",
-    "extra": {
-      "eas": {
-        "projectId": "1629be7a-fad3-4547-9114-56dbb6d4ee12"
+    "icon": "./assets/icon.png",
+    "plugins": [
+      ["expo-av"],
+      [
+        "expo-notifications",
+        {
+          "color": "#2563EB",
+          "defaultChannel": "default"
+        }
+      ]
+    ],
+    "android": {
+      "permissions": ["android.permission.VIBRATE"],
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/icon.png",
+        "backgroundColor": "#E0F2FE"
       }
     },
-    "plugins": [["expo-av"]]
+    "extra": {
+      "eas": {
+        "projectId": "a7d7783b-54bf-407d-afa7-da984a8d7671"
+      }
+    }
   }
 }

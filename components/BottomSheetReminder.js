@@ -11,7 +11,12 @@ import {
   Platform,
   BackHandler,
 } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import DateTimePicker from "@react-native-community/datetimepicker";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { scheduleAllReminders } from "../utils/notifications";
+
+const REMINDERS_STORAGE_KEY = "@breathwise_reminders";
 
 export default function BottomSheetReminder({ onClose }) {
   const [selectedTimes, setSelectedTimes] = useState([
@@ -27,6 +32,11 @@ export default function BottomSheetReminder({ onClose }) {
 
   const slideAnim = useRef(new Animated.Value(400)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
+
+  // Load saved reminders on component mount
+  useEffect(() => {
+    loadSavedReminders();
+  }, []);
 
   // Animate in
   useEffect(() => {
@@ -61,6 +71,28 @@ export default function BottomSheetReminder({ onClose }) {
 
     return () => backHandler.remove();
   }, [showPicker]);
+
+  const loadSavedReminders = async () => {
+    try {
+      const savedReminders = await AsyncStorage.getItem(REMINDERS_STORAGE_KEY);
+      if (savedReminders) {
+        setSelectedTimes(JSON.parse(savedReminders));
+      }
+    } catch (error) {
+      console.error("Error loading saved reminders:", error);
+    }
+  };
+
+  const saveRemindersToStorage = async (reminders) => {
+    try {
+      await AsyncStorage.setItem(
+        REMINDERS_STORAGE_KEY,
+        JSON.stringify(reminders)
+      );
+    } catch (error) {
+      console.error("Error saving reminders:", error);
+    }
+  };
 
   const handleClose = () => {
     Animated.parallel([
@@ -118,9 +150,15 @@ export default function BottomSheetReminder({ onClose }) {
     setShowPicker(true);
   };
 
-  const handleSaveReminders = () => {
-    console.log("Saved times:", selectedTimes);
-    handleClose();
+  const handleSaveReminders = async () => {
+    try {
+      await saveRemindersToStorage(selectedTimes);
+      await scheduleAllReminders();
+      handleClose();
+    } catch (error) {
+      console.error("Error saving reminders:", error);
+      handleClose();
+    }
   };
 
   return (
@@ -128,61 +166,70 @@ export default function BottomSheetReminder({ onClose }) {
       transparent
       animationType="none"
       statusBarTranslucent
-      onRequestClose={handleClose} // 🔹 also supports back press in some Android versions
+      onRequestClose={handleClose}
     >
-      <TouchableWithoutFeedback onPress={handleClose}>
-        <Animated.View style={[styles.overlay, { opacity: fadeAnim }]}>
-          <TouchableWithoutFeedback>
+      <SafeAreaView style={styles.modalSafeArea} edges={['bottom']}>
+        <TouchableWithoutFeedback onPress={handleClose}>
+          <Animated.View style={[styles.overlay, { opacity: fadeAnim }]}>
             <Animated.View
-              style={[styles.sheet, { transform: [{ translateY: slideAnim }] }]}
+              style={[styles.sheetContainer, { transform: [{ translateY: slideAnim }] }]}
             >
-              <View style={styles.header}>
-                <View style={styles.handle} />
-                <Text style={styles.title}>Set Daily Reminders</Text>
-              </View>
+              <View style={styles.sheet}>
+                <View style={styles.header}>
+                  <View style={styles.handle} />
+                  <Text style={styles.title}>Set Daily Reminders</Text>
+                </View>
 
-              {selectedTimes.map((slot, i) => (
+                {selectedTimes.map((slot, i) => (
+                  <TouchableOpacity
+                    key={i}
+                    style={styles.row}
+                    activeOpacity={0.7}
+                    onPress={() => openTimePicker(i)}
+                  >
+                    <Text style={styles.label}>{slot.label}</Text>
+                    <Text style={styles.time}>{slot.time}</Text>
+                  </TouchableOpacity>
+                ))}
+
                 <TouchableOpacity
-                  key={i}
-                  style={styles.row}
-                  activeOpacity={0.7}
-                  onPress={() => openTimePicker(i)}
+                  key={`save-btn-${selectedTimes.map(t => t.time).join('-')}`}
+                  style={styles.doneBtn}
+                  activeOpacity={0.8}
+                  onPress={handleSaveReminders}
                 >
-                  <Text style={styles.label}>{slot.label}</Text>
-                  <Text style={styles.time}>{slot.time}</Text>
+                  <Text style={styles.doneText}>Save</Text>
                 </TouchableOpacity>
-              ))}
 
-              <TouchableOpacity
-                style={styles.doneBtn}
-                activeOpacity={0.8}
-                onPress={handleSaveReminders}
-              >
-                <Text style={styles.doneText}>Save</Text>
-              </TouchableOpacity>
-
-              {showPicker && (
-                <DateTimePicker
-                  value={pickerTime}
-                  mode="time"
-                  display={Platform.OS === "ios" ? "spinner" : "default"}
-                  onChange={handleTimeChange}
-                  is24Hour={false}
-                />
-              )}
+                {showPicker && (
+                  <DateTimePicker
+                    value={pickerTime}
+                    mode="time"
+                    display={Platform.OS === "ios" ? "spinner" : "default"}
+                    onChange={handleTimeChange}
+                    is24Hour={false}
+                  />
+                )}
+              </View>
             </Animated.View>
-          </TouchableWithoutFeedback>
-        </Animated.View>
-      </TouchableWithoutFeedback>
+          </Animated.View>
+        </TouchableWithoutFeedback>
+      </SafeAreaView>
     </Modal>
   );
 }
 
 const styles = StyleSheet.create({
+  modalSafeArea: {
+    flex: 1,
+  },
   overlay: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.4)",
     justifyContent: "flex-end",
+  },
+  sheetContainer: {
+    // Only this container gets animated
   },
   sheet: {
     backgroundColor: "#fff",

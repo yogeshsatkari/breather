@@ -73,7 +73,7 @@ export default function HomeScreen({ navigation }) {
           activeOpacity={0.8}
           onPress={() => setShowReminderSheet(true)}
         >
-          <Text style={styles.reminderText}>🌤️ Remind me to take a break</Text>
+          <Text style={styles.reminderText}>🌤️ Set Break Reminders</Text>
         </TouchableOpacity>
       )}
 
@@ -89,8 +89,8 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#F9FAFB",
-    paddingTop: 60,
     paddingHorizontal: 24,
+    paddingTop: 20, // Top padding for content spacing
   },
   header: {
     flexDirection: "row",
@@ -129,7 +129,8 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   reminderButton: {
-    marginTop: 70,
+    marginTop: 60,
+    marginBottom: 40, // Extra bottom margin to ensure no overlap with navigation
     backgroundColor: "#FFFFFF",
     borderRadius: 14,
     paddingHorizontal: 36,
@@ -142,14 +143,14 @@ const styles = StyleSheet.create({
     alignSelf: "center",
   },
   reminderText: {
-    color: "#111827",
+    color: "#293140",
     fontWeight: "500",
     fontSize: 15,
   },
   closeButton: {
     position: "absolute",
-    top: 60, // same as container paddingTop for alignment
-    right: 24, // same as header horizontal padding
+    top: 20,
+    right: 24,
     padding: 6,
     borderRadius: 8,
   },

@@ -6,79 +6,72 @@ import {
   Linking,
   StyleSheet,
   Platform,
-  StatusBar,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 
 export default function SettingsScreen({ navigation }) {
   const openLink = (url) => Linking.openURL(url);
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <View style={styles.container}>
-        {/* Header */}
-        <View style={styles.header}>
-          <TouchableOpacity
-            onPress={() => navigation.goBack()}
-            style={styles.backButton}
-            activeOpacity={0.7}
-          >
-            <Ionicons name="chevron-back" size={24} color="#374151" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Settings</Text>
-          <View style={{ width: 24 }} />
-        </View>
+    <View style={styles.container}>
+      {/* Header */}
+      <View style={styles.header}>
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          style={styles.backButton}
+          activeOpacity={0.7}
+        >
+          <Ionicons name="chevron-back" size={24} color="#374151" />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Settings</Text>
+        <View style={{ width: 24 }} />
+      </View>
 
-        {/* Options */}
-        <View style={styles.content}>
-          {[
-            { label: "Terms of Service", link: "https://bramble-pull-2fa.notion.site/Terms-of-Service-Break-Free-29ef34e14bad80488ab3f96d7e86408a" },
-            { label: "Privacy Policy", link: "https://bramble-pull-2fa.notion.site/Privacy-Policy-Break-Free-29ef34e14bad8010a145de033b4f9c24" },
-          ].map((item, i) => (
-            <TouchableOpacity
-              key={i}
-              style={styles.option}
-              onPress={() => openLink(item.link)}
-              activeOpacity={0.6}
-            >
-              <Text style={styles.optionText}>{item.label}</Text>
-            </TouchableOpacity>
-          ))}
-
+      {/* Options */}
+      <View style={styles.content}>
+        {[
+          { label: "Terms of Service", link: "https://bramble-pull-2fa.notion.site/Terms-of-Service-Break-Free-29ef34e14bad80488ab3f96d7e86408a" },
+          { label: "Privacy Policy", link: "https://bramble-pull-2fa.notion.site/Privacy-Policy-Break-Free-29ef34e14bad8010a145de033b4f9c24" },
+        ].map((item, i) => (
           <TouchableOpacity
-            style={[styles.option, { borderBottomWidth: 0 }]}
-            onPress={() => alert("Account deletion coming soon")}
+            key={i}
+            style={styles.option}
+            onPress={() => openLink(item.link)}
             activeOpacity={0.6}
           >
-            <Text style={[styles.optionText, styles.deleteText]}>
-              Delete Account
-            </Text>
+            <Text style={styles.optionText}>{item.label}</Text>
           </TouchableOpacity>
-        </View>
+        ))}
 
-        {/* App Version */}
-        <Text style={styles.versionText}>v1.0.0</Text>
+        <TouchableOpacity
+          style={[styles.option, { borderBottomWidth: 0 }]}
+          onPress={() => alert("Account deletion coming soon")}
+          activeOpacity={0.6}
+        >
+          <Text style={[styles.optionText, styles.deleteText]}>
+            Delete Account
+          </Text>
+        </TouchableOpacity>
       </View>
-    </SafeAreaView>
+
+      {/* App Version */}
+      <Text style={styles.versionText}>v1.0.0</Text>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: "#F9FAFB",
-  },
   container: {
     flex: 1,
     paddingHorizontal: 24,
-    paddingTop: Platform.OS === "android" ? StatusBar.currentHeight + 20 : 60,
+    paddingTop: 20, // Top padding for content spacing
   },
   header: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     marginBottom: 32,
+    paddingTop: 40, // Increased spacing from top
   },
   backButton: {
     padding: 6,
@@ -113,6 +106,6 @@ const styles = StyleSheet.create({
     textAlign: "center",
     color: "#9CA3AF",
     fontSize: 13,
-    marginBottom: 12,
+    marginBottom: 40, // Extra bottom margin to ensure no overlap with navigation
   },
 });
