@@ -6,6 +6,7 @@ import {
   Animated,
   Easing,
   Pressable,
+  AppState,
 } from "react-native";
 import Svg, { Circle, Defs, RadialGradient, Stop } from "react-native-svg";
 import { Audio } from "expo-av";
@@ -38,16 +39,54 @@ export default function TimerCircle({
   const timerRef = useRef(null);
   const prepareTimeout = useRef(null);
 
+  /** ─────── AUDIO MODE CONFIG ─────── **/
+  useEffect(() => {
+    (async () => {
+      await Audio.setAudioModeAsync({
+        allowsRecordingIOS: false,
+        staysActiveInBackground: true, // ✅ key for background playback
+        playsInSilentModeIOS: true,
+        shouldDuckAndroid: false,
+        playThroughEarpieceAndroid: false,
+      });
+    })();
+  }, []);
+
+  /** ─────── PRELOAD AUDIO ─────── **/
+  useEffect(() => {
+    let preloadedSound;
+    const preloadAudio = async () => {
+      try {
+        const { sound } = await Audio.Sound.createAsync(
+          require("../assets/sounds/guide1.mp3"),
+          { shouldPlay: false }
+        );
+        setSound(sound);
+        preloadedSound = sound;
+      } catch (e) {
+        console.warn("Audio preload error:", e);
+      }
+    };
+    preloadAudio();
+    return () => {
+      if (preloadedSound) preloadedSound.unloadAsync();
+    };
+  }, []);
+
   /** ─────── AUDIO CONTROL ─────── **/
   const playAudio = async () => {
     try {
-      const { sound } = await Audio.Sound.createAsync(
-        require("../assets/sounds/guide1.mp3"),
-        { shouldPlay: true }
-      );
-      setSound(sound);
+      if (sound) {
+        await sound.replayAsync();
+      } else {
+        const { sound: newSound } = await Audio.Sound.createAsync(
+          require("../assets/sounds/guide1.mp3"),
+          { shouldPlay: true }
+        );
+        setSound(newSound);
+      }
     } catch (e) {
-      console.warn("Audio error:", e);
+      console.warn("Audio play error:", e);
     }
   };
 
@@ -55,9 +94,7 @@ export default function TimerCircle({
     if (sound) {
       try {
         await sound.stopAsync();
-        await sound.unloadAsync();
       } catch {}
-      setSound(null);
     }
   };
 
@@ -66,7 +103,6 @@ export default function TimerCircle({
     await stopAudio();
     if (timerRef.current) clearInterval(timerRef.current);
     if (prepareTimeout.current) clearTimeout(prepareTimeout.current);
-
     setTimeLeft(duration);
     setIsRunning(false);
     setIsStarted(false);
@@ -76,7 +112,7 @@ export default function TimerCircle({
     onStop && onStop();
   };
 
-  /** ─────── TIMER LOGIC ─────── **/
+  /** ─────── TIMER ─────── **/
   useEffect(() => {
     if (!isRunning) return;
 
@@ -86,7 +122,6 @@ export default function TimerCircle({
       setIsRunning(false);
       onComplete && onComplete();
 
-      // Reset after a short pause
       const resetTimeout = setTimeout(resetSession, 2000);
       return () => clearTimeout(resetTimeout);
     }
@@ -95,7 +130,7 @@ export default function TimerCircle({
     return () => clearInterval(timerRef.current);
   }, [isRunning, timeLeft]);
 
-  /** ─────── ANIMATE PROGRESS ─────── **/
+  /** ─────── PROGRESS ANIMATION ─────── **/
   useEffect(() => {
     Animated.timing(animatedValue, {
       toValue: 1 - timeLeft / duration,
@@ -105,7 +140,7 @@ export default function TimerCircle({
     }).start();
   }, [timeLeft]);
 
-  /** ─────── PREPARING PULSE ─────── **/
+  /** ─────── PULSE WHILE PREPARING ─────── **/
   useEffect(() => {
     if (!isPreparing) return;
     const loop = Animated.loop(
@@ -148,7 +183,7 @@ export default function TimerCircle({
   const handleStart = async () => {
     if (isStarted || isPreparing) return;
     setIsPreparing(true);
-    setStatus("Preparing Your Session");
+    setStatus("Preparing your session");
     onStart && onStart();
     await playAudio();
 
@@ -165,7 +200,17 @@ export default function TimerCircle({
     if (!isSessionActive) resetSession();
   }, [isSessionActive]);
 
-  /** ─────── SVG PROGRESS CALC ─────── **/
+  /** ─────── KEEP PLAYING IN BACKGROUND ─────── **/
+  useEffect(() => {
+    const subscription = AppState.addEventListener("change", async (state) => {
+      if (state === "background" && isRunning && sound) {
+        await sound.playAsync(); // ensure continues in background
+      }
+    });
+    return () => subscription.remove();
+  }, [isRunning, sound]);
+
+  /** ─────── SVG PROGRESS ─────── **/
   const strokeDashoffset = animatedValue.interpolate({
     inputRange: [0, 1],
     outputRange: [circumference, 0],
@@ -178,7 +223,6 @@ export default function TimerCircle({
   return (
     <Pressable onPress={handleStart}>
       <Animated.View style={[styles.container, { opacity: fadeAnim }]}>
-        {/* PREPARING STAGE */}
         {isPreparing ? (
           <View style={styles.preparingContainer}>
             <Text style={styles.preparingTitle}>Settle in</Text>
@@ -198,7 +242,6 @@ export default function TimerCircle({
             </Animated.View>
           </View>
         ) : (
-          // TIMER / MAIN STAGE
           <View style={{ alignItems: "center", justifyContent: "center" }}>
             <Svg width="240" height="240" viewBox="0 0 240 240">
               <Defs>
@@ -209,12 +252,10 @@ export default function TimerCircle({
                 </RadialGradient>
               </Defs>
 
-              {/* Idle state */}
               {!isStarted && (
                 <Circle cx="120" cy="120" r={radius} fill="url(#matte)" />
               )}
 
-              {/* Active meditation */}
               {isStarted && (
                 <>
                   <Circle

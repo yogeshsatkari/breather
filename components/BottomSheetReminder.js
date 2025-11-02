@@ -9,6 +9,7 @@ import {
   Animated,
   Easing,
   Platform,
+  BackHandler,
 } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
 
@@ -27,6 +28,7 @@ export default function BottomSheetReminder({ onClose }) {
   const slideAnim = useRef(new Animated.Value(400)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
+  // Animate in
   useEffect(() => {
     Animated.parallel([
       Animated.spring(slideAnim, {
@@ -41,6 +43,24 @@ export default function BottomSheetReminder({ onClose }) {
       }),
     ]).start();
   }, []);
+
+  // 🔹 Handle Android Back Button
+  useEffect(() => {
+    const backHandler = BackHandler.addEventListener(
+      "hardwareBackPress",
+      () => {
+        if (showPicker) {
+          // if time picker open, close it first
+          setShowPicker(false);
+          return true;
+        }
+        handleClose();
+        return true; // prevents app from exiting
+      }
+    );
+
+    return () => backHandler.remove();
+  }, [showPicker]);
 
   const handleClose = () => {
     Animated.parallel([
@@ -104,7 +124,12 @@ export default function BottomSheetReminder({ onClose }) {
   };
 
   return (
-    <Modal transparent animationType="none" statusBarTranslucent>
+    <Modal
+      transparent
+      animationType="none"
+      statusBarTranslucent
+      onRequestClose={handleClose} // 🔹 also supports back press in some Android versions
+    >
       <TouchableWithoutFeedback onPress={handleClose}>
         <Animated.View style={[styles.overlay, { opacity: fadeAnim }]}>
           <TouchableWithoutFeedback>

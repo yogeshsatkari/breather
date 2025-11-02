@@ -33,8 +33,8 @@ export default function SettingsScreen({ navigation }) {
         {/* Options */}
         <View style={styles.content}>
           {[
-            { label: "Terms of Service", link: "https://yourdomain.com/tos" },
-            { label: "Privacy Policy", link: "https://yourdomain.com/privacy" },
+            { label: "Terms of Service", link: "https://bramble-pull-2fa.notion.site/Terms-of-Service-Break-Free-29ef34e14bad80488ab3f96d7e86408a" },
+            { label: "Privacy Policy", link: "https://bramble-pull-2fa.notion.site/Privacy-Policy-Break-Free-29ef34e14bad8010a145de033b4f9c24" },
           ].map((item, i) => (
             <TouchableOpacity
               key={i}
