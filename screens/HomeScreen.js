@@ -19,7 +19,7 @@ export default function HomeScreen({ navigation }) {
         <>
           {/* Header */}
           <View style={styles.header}>
-            <Text style={styles.appTitle}>Break Free</Text>
+            <Text style={styles.appTitle}>Reset</Text>
             <TouchableOpacity
               onPress={() => navigation.navigate("Settings")}
               style={styles.iconButton}
@@ -31,9 +31,9 @@ export default function HomeScreen({ navigation }) {
 
           {/* Hero */}
           <View style={styles.hero}>
-            <Text style={styles.heroTitle}>Ready for your 2-minute break?</Text>
+            <Text style={styles.heroTitle}>Your Guided Break is Ready</Text>
             <Text style={styles.heroSubtitle}>
-              Take a deep breath and find your center.
+              Less rush. Less stress. More life.
             </Text>
           </View>
         </>
@@ -98,7 +98,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   appTitle: {
-    fontSize: 22,
+    fontSize: 24,
     fontWeight: "700",
     color: "#1F2937",
   },
@@ -112,7 +112,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
   },
   heroTitle: {
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: "600",
     color: "#111827",
     textAlign: "center",
