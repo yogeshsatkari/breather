@@ -1,10 +1,11 @@
 import React, { useState } from "react";
-import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, Image } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import TimerCircle from "../components/TimerCircle";
 import BottomSheetReminder from "../components/BottomSheetReminder";
 
-export default function HomeScreen({ navigation }) {
+export default function HomeScreen({ navigation, route }) {
+  const { user } = route.params || {};
   const [showReminderSheet, setShowReminderSheet] = useState(false);
   const [sessionActive, setSessionActive] = useState(false);
 
@@ -22,16 +23,31 @@ export default function HomeScreen({ navigation }) {
             <Text style={styles.appTitle}>Reset</Text>
             <TouchableOpacity
               onPress={() => navigation.navigate("Settings")}
-              style={styles.iconButton}
+              style={styles.profileButton}
               activeOpacity={0.7}
             >
-              <Ionicons name="settings-outline" size={24} color="#4B5563" />
+              {user?.photoURL ? (
+                <Image
+                  source={{ uri: user.photoURL }}
+                  style={styles.profileImage}
+                />
+              ) : (
+                <View style={styles.profilePlaceholder}>
+                  <Ionicons name="person" size={20} color="#4B5563" />
+                </View>
+              )}
             </TouchableOpacity>
           </View>
 
           {/* Hero */}
           <View style={styles.hero}>
-            <Text style={styles.heroTitle}>Your Guided Break is Ready</Text>
+            <Text style={styles.heroTitle}>
+              {user?.displayName
+                ? `${
+                    user.displayName.split(" ")[0]
+                  }, your guided break is ready`
+                : "Your guided break is ready"}
+            </Text>
             <Text style={styles.heroSubtitle}>
               Less rush. Less stress. More life.
             </Text>
@@ -153,5 +169,27 @@ const styles = StyleSheet.create({
     right: 24,
     padding: 6,
     borderRadius: 8,
+  },
+  profileButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    overflow: "hidden",
+    backgroundColor: "#F3F4F6",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  profileImage: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+  },
+  profilePlaceholder: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "#F3F4F6",
+    justifyContent: "center",
+    alignItems: "center",
   },
 });
