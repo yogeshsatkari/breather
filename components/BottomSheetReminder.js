@@ -10,12 +10,13 @@ import {
   Easing,
   Platform,
   BackHandler,
-  Switch,  // Added Switch import
+  Switch,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { scheduleAllReminders } from "../utils/notifications";
+import { usePostHog } from "posthog-react-native";
 
 const REMINDERS_STORAGE_KEY = "@breathwise_reminders";
 
@@ -33,6 +34,19 @@ export default function BottomSheetReminder({ onClose }) {
 
   const slideAnim = useRef(new Animated.Value(400)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
+  const posthog = usePostHog();
+
+  // Track reminder sheet opened
+  useEffect(() => {
+    posthog.capture("reminder_sheet_opened", {
+      timestamp: new Date().toISOString(),
+      initial_reminder_state: selectedTimes.map((r) => ({
+        label: r.label,
+        time: r.time,
+        enabled: r.enabled,
+      })),
+    });
+  }, [posthog]);
 
   // Load saved reminders on component mount
   useEffect(() => {
@@ -79,9 +93,9 @@ export default function BottomSheetReminder({ onClose }) {
       if (savedReminders) {
         const parsed = JSON.parse(savedReminders);
         // Ensure all reminders have enabled property (for backward compatibility)
-        const updated = parsed.map(reminder => ({
+        const updated = parsed.map((reminder) => ({
           ...reminder,
-          enabled: reminder.enabled !== undefined ? reminder.enabled : true
+          enabled: reminder.enabled !== undefined ? reminder.enabled : true,
         }));
         setSelectedTimes(updated);
       }
@@ -102,6 +116,26 @@ export default function BottomSheetReminder({ onClose }) {
   };
 
   const handleClose = () => {
+    // Track reminder sheet closed without saving
+    const hasUnsavedChanges = selectedTimes.some((r) => {
+      const original = [
+        { label: "Morning", time: "07:00 AM", enabled: true },
+        { label: "Noon", time: "12:00 PM", enabled: true },
+        { label: "Evening", time: "06:00 PM", enabled: true },
+        { label: "Night", time: "10:00 PM", enabled: true },
+      ].find((orig) => orig.label === r.label);
+      return (
+        original && (original.time !== r.time || original.enabled !== r.enabled)
+      );
+    });
+
+    if (hasUnsavedChanges) {
+      posthog.capture("reminder_sheet_closed_unsaved", {
+        unsaved_changes: true,
+        timestamp: new Date().toISOString(),
+      });
+    }
+
     Animated.parallel([
       Animated.timing(slideAnim, {
         toValue: 400,
@@ -130,24 +164,54 @@ export default function BottomSheetReminder({ onClose }) {
 
   const handleTimeChange = (event, selectedDate) => {
     if (event.type === "dismissed") {
+      // Track time picker dismissed
+      posthog.capture("time_picker_dismissed", {
+        reminder_label: selectedTimes[currentIndex]?.label,
+        timestamp: new Date().toISOString(),
+      });
       setShowPicker(false);
       return;
     }
 
     const newTime = formatTime(selectedDate);
     const updated = [...selectedTimes];
+    const oldTime = updated[currentIndex].time;
     updated[currentIndex].time = newTime;
     setSelectedTimes(updated);
     setShowPicker(false);
+
+    // Track time changes
+    posthog.capture("reminder_time_changed", {
+      reminder_label: updated[currentIndex].label,
+      old_time: oldTime,
+      new_time: newTime,
+      timestamp: new Date().toISOString(),
+    });
   };
 
   const toggleReminder = (index) => {
     const updated = [...selectedTimes];
+    const wasEnabled = updated[index].enabled;
     updated[index].enabled = !updated[index].enabled;
     setSelectedTimes(updated);
+
+    // Track toggle changes
+    posthog.capture("reminder_toggle_changed", {
+      reminder_label: updated[index].label,
+      previous_state: wasEnabled,
+      new_state: !wasEnabled,
+      timestamp: new Date().toISOString(),
+    });
   };
 
   const openTimePicker = (index) => {
+    // Track time picker opens
+    posthog.capture("time_picker_opened", {
+      reminder_label: selectedTimes[index].label,
+      current_time: selectedTimes[index].time,
+      timestamp: new Date().toISOString(),
+    });
+
     const [time, ampm] = selectedTimes[index].time.split(" ");
     const [hourStr, minuteStr] = time.split(":");
     let hours = parseInt(hourStr, 10);
@@ -167,9 +231,45 @@ export default function BottomSheetReminder({ onClose }) {
     try {
       await saveRemindersToStorage(selectedTimes);
       await scheduleAllReminders();
+
+      // Track reminder save
+      const enabledCount = selectedTimes.filter((r) => r.enabled).length;
+      const changesMade = selectedTimes.some((r) => {
+        const original = [
+          { label: "Morning", time: "07:00 AM", enabled: true },
+          { label: "Noon", time: "12:00 PM", enabled: true },
+          { label: "Evening", time: "06:00 PM", enabled: true },
+          { label: "Night", time: "10:00 PM", enabled: true },
+        ].find((orig) => orig.label === r.label);
+        return (
+          original &&
+          (original.time !== r.time || original.enabled !== r.enabled)
+        );
+      });
+
+      posthog.capture("reminders_saved", {
+        total_reminders: selectedTimes.length,
+        enabled_reminders: enabledCount,
+        disabled_reminders: selectedTimes.length - enabledCount,
+        changes_made: changesMade,
+        reminder_configuration: selectedTimes.map((r) => ({
+          label: r.label,
+          time: r.time,
+          enabled: r.enabled,
+        })),
+        timestamp: new Date().toISOString(),
+      });
+
       handleClose();
     } catch (error) {
       console.error("Error saving reminders:", error);
+
+      // Track save failure
+      posthog.capture("reminders_save_failed", {
+        error_message: error.message,
+        timestamp: new Date().toISOString(),
+      });
+
       handleClose();
     }
   };
@@ -181,11 +281,14 @@ export default function BottomSheetReminder({ onClose }) {
       statusBarTranslucent
       onRequestClose={handleClose}
     >
-      <SafeAreaView style={styles.modalSafeArea} edges={['bottom']}>
+      <SafeAreaView style={styles.modalSafeArea} edges={["bottom"]}>
         <TouchableWithoutFeedback onPress={handleClose}>
           <Animated.View style={[styles.overlay, { opacity: fadeAnim }]}>
             <Animated.View
-              style={[styles.sheetContainer, { transform: [{ translateY: slideAnim }] }]}
+              style={[
+                styles.sheetContainer,
+                { transform: [{ translateY: slideAnim }] },
+              ]}
             >
               <View style={styles.sheet}>
                 <View style={styles.header}>
@@ -200,14 +303,24 @@ export default function BottomSheetReminder({ onClose }) {
                       activeOpacity={0.7}
                       onPress={() => openTimePicker(i)}
                     >
-                      <Text style={[styles.label, !slot.enabled && styles.disabledText]}>
+                      <Text
+                        style={[
+                          styles.label,
+                          !slot.enabled && styles.disabledText,
+                        ]}
+                      >
                         {slot.label}
                       </Text>
-                      <Text style={[styles.time, !slot.enabled && styles.disabledText]}>
+                      <Text
+                        style={[
+                          styles.time,
+                          !slot.enabled && styles.disabledText,
+                        ]}
+                      >
                         {slot.time}
                       </Text>
                     </TouchableOpacity>
-                    
+
                     <Switch
                       value={slot.enabled}
                       onValueChange={() => toggleReminder(i)}
@@ -219,7 +332,9 @@ export default function BottomSheetReminder({ onClose }) {
                 ))}
 
                 <TouchableOpacity
-                  key={`save-btn-${selectedTimes.map(t => `${t.time}-${t.enabled}`).join('-')}`}
+                  key={`save-btn-${selectedTimes
+                    .map((t) => `${t.time}-${t.enabled}`)
+                    .join("-")}`}
                   style={styles.doneBtn}
                   activeOpacity={0.8}
                   onPress={handleSaveReminders}

@@ -1,16 +1,61 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { View, Text, StyleSheet, TouchableOpacity, Image } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import TimerCircle from "../components/TimerCircle";
 import BottomSheetReminder from "../components/BottomSheetReminder";
+import { usePostHog } from "posthog-react-native";
+import auth from "@react-native-firebase/auth";
 
 export default function HomeScreen({ navigation, route }) {
-  const { user } = route.params || {};
+  const [user, setUser] = useState(route.params?.user || null);
   const [showReminderSheet, setShowReminderSheet] = useState(false);
   const [sessionActive, setSessionActive] = useState(false);
+  const [abandonmentData, setAbandonmentData] = useState(null); // Add this state
+
+  const posthog = usePostHog();
+
+  useEffect(() => {
+    const subscriber = auth().onAuthStateChanged((user) => {
+      setUser(user);
+    });
+    return subscriber;
+  }, []);
 
   const handleStopSession = () => {
     setSessionActive(false); // triggers reset inside TimerCircle via prop
+
+    // Track session abandonment with additional data
+    posthog.capture("meditation_session_abandoned", {
+      abandonment_method: "manual_stop",
+      abandoned_during_preparation:
+        abandonmentData?.abandonedDuringPreparation || false,
+      elapsed_seconds_on_screen: abandonmentData?.elapsedSeconds || 0,
+      timestamp: new Date().toISOString(),
+    });
+
+    // Reset abandonment data
+    setAbandonmentData(null);
+  };
+  // Handle abandonment data from TimerCircle
+  const handleAbandonmentData = (data) => {
+    setAbandonmentData(data);
+  };
+  // Track reminder button taps
+  const handleReminderPress = () => {
+    posthog.capture("reminder_setup_opened", {
+      source: "home_screen_button",
+      timestamp: new Date().toISOString(),
+    });
+    setShowReminderSheet(true);
+  };
+
+  // Track settings navigation
+  const handleProfileSettingsPress = () => {
+    posthog.capture("profile_settings_opened", {
+      source: "home_screen",
+      timestamp: new Date().toISOString(),
+    });
+    navigation.navigate("Settings");
   };
 
   return (
@@ -22,7 +67,7 @@ export default function HomeScreen({ navigation, route }) {
           <View style={styles.header}>
             <Text style={styles.appTitle}>Reset</Text>
             <TouchableOpacity
-              onPress={() => navigation.navigate("Settings")}
+              onPress={handleProfileSettingsPress}
               style={styles.profileButton}
               activeOpacity={0.7}
             >
@@ -42,6 +87,7 @@ export default function HomeScreen({ navigation, route }) {
           {/* Hero */}
           <View style={styles.hero}>
             <Text style={styles.heroTitle}>
+              {/* Ready for your 2-minute break? */}
               {user?.displayName
                 ? `${
                     user.displayName.split(" ")[0]
@@ -67,6 +113,7 @@ export default function HomeScreen({ navigation, route }) {
           onStart={() => setSessionActive(true)}
           onComplete={() => setSessionActive(false)}
           onStop={() => setSessionActive(false)}
+          onGetAbandonmentData={handleAbandonmentData}
           isSessionActive={sessionActive}
         />
       </View>
@@ -87,7 +134,7 @@ export default function HomeScreen({ navigation, route }) {
         <TouchableOpacity
           style={styles.reminderButton}
           activeOpacity={0.8}
-          onPress={() => setShowReminderSheet(true)}
+          onPress={handleReminderPress}
         >
           <Text style={styles.reminderText}>🌤️ Set Break Reminders</Text>
         </TouchableOpacity>

@@ -11,6 +11,7 @@ import {
 import Svg, { Circle, Defs, RadialGradient, Stop } from "react-native-svg";
 import { Audio } from "expo-av";
 import { Ionicons } from "@expo/vector-icons";
+import { usePostHog } from "posthog-react-native";
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
@@ -20,7 +21,9 @@ export default function TimerCircle({
   onComplete,
   onStop,
   isSessionActive,
+  onGetAbandonmentData,
 }) {
+  const posthog = usePostHog();
   const [timeLeft, setTimeLeft] = useState(duration);
   const [isRunning, setIsRunning] = useState(false);
   const [isStarted, setIsStarted] = useState(false);
@@ -109,6 +112,15 @@ export default function TimerCircle({
     setIsPreparing(false);
     setStatus("Tap to Start");
     animatedValue.setValue(0);
+
+    // Call the abandonment data callback if provided
+    if (onGetAbandonmentData) {
+      onGetAbandonmentData({
+        abandonedDuringPreparation: isPreparing,
+        elapsedSeconds: duration - timeLeft,
+      });
+    }
+
     onStop && onStop();
   };
 
@@ -122,13 +134,22 @@ export default function TimerCircle({
       setIsRunning(false);
       onComplete && onComplete();
 
+      // Track session completion
+      posthog.capture("meditation_session_completed", {
+        session_type: "guided_breathing",
+        planned_duration_minutes: duration / 60,
+        completed_fully: true,
+        actual_duration_minutes: (duration - timeLeft) / 60,
+        timestamp: new Date().toISOString(),
+      });
+
       const resetTimeout = setTimeout(resetSession, 2000);
       return () => clearTimeout(resetTimeout);
     }
 
     timerRef.current = setInterval(() => setTimeLeft((t) => t - 1), 1000);
     return () => clearInterval(timerRef.current);
-  }, [isRunning, timeLeft]);
+  }, [isRunning, timeLeft, posthog]);
 
   /** ─────── PROGRESS ANIMATION ─────── **/
   useEffect(() => {
@@ -185,6 +206,14 @@ export default function TimerCircle({
     setIsPreparing(true);
     setStatus("Preparing your session");
     onStart && onStart();
+
+    // Track meditation session start
+    posthog.capture("meditation_session_started", {
+      session_type: "guided_breathing",
+      planned_duration_minutes: duration / 60,
+      timestamp: new Date().toISOString(),
+    });
+
     await playAudio();
 
     prepareTimeout.current = setTimeout(() => {

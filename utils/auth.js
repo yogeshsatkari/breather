@@ -38,11 +38,16 @@ export const signInWithGoogle = async () => {
         case statusCodes.PLAY_SERVICES_NOT_AVAILABLE:
           console.log("Play services not available");
           break;
+        case statusCodes.SIGN_IN_CANCELLED:
+          console.log("User cancelled sign-in");
+          throw error; // Re-throw so the UI can handle it
         default:
           console.log("Google sign-in error:", error);
+          throw error; // Re-throw other errors too
       }
     } else {
       console.log("Unexpected error:", error);
+      throw error; // Re-throw unexpected errors
     }
   }
 };

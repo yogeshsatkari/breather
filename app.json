@@ -35,7 +35,9 @@
     "extra": {
       "eas": {
         "projectId": "a7d7783b-54bf-407d-afa7-da984a8d7671"
-      }
+      },
+      "posthogApiKey": "phc_G2nuxz8TbqDLJVGY5JuYAodnpqzIKjOUeN7wEpcatfH",
+      "posthogHost": "https://app.posthog.com"
     }
   }
 }

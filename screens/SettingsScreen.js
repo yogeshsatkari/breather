@@ -5,7 +5,6 @@ import {
   TouchableOpacity,
   Linking,
   StyleSheet,
-  Platform,
   Image, // Add this import
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
